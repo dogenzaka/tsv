@@ -5,7 +5,7 @@ TSV parser for Go
 [![Coverage](http://img.shields.io/codecov/c/github/dogenzaka/tsv.svg?style=flat)](https://codecov.io/github/dogenzaka/tsv)
 [![License](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/dogenzaka/rotator/blob/master/LICENSE)
 
-tsv is tab-separated values parser for GO. It will parse and data into any type of struct. tsv supports both simple struct and tagged fields.
+tsv is tab-separated values parser for GO. It will parse lines and insert data into any type of struct. tsv supports both simple structs and structs with tagging.
 
 ```
 go get github.com/dogenzaka/tsv
@@ -14,7 +14,7 @@ go get github.com/dogenzaka/tsv
 Quickstart
 --
 
-Struct is indexed by field order.
+tsv inserts data into struct by fields order.
 
 ```go
 
@@ -25,10 +25,10 @@ import (
     )
 
 type TestRow struct {
-  Name   string
-  Age    int
-  Gender string
-  Active bool
+  Name   string // 0
+  Age    int    // 1
+  Gender string // 2
+  Active bool   // 3
 }
 
 func main() {
@@ -54,7 +54,7 @@ func main() {
 
 ```
 
-You can define tags of fields in struct to map tsv values without ordering.
+You can define tags to struct fields to map values.
 
 ```go
 type TestRow struct {
@@ -68,7 +68,7 @@ type TestRow struct {
 Supported field types
 --
 
-Currently this library supports
+Currently this library supports limited fields
 
 - int
 - string
