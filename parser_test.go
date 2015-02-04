@@ -21,7 +21,7 @@ type TestTaggedRow struct {
 
 func TestParser(t *testing.T) {
 
-	file, err := os.Open("example.tsv")
+	file, err := os.Open("example_simple.tsv")
 	if err != nil {
 		t.Error(err)
 		return
@@ -29,11 +29,7 @@ func TestParser(t *testing.T) {
 	defer file.Close()
 
 	data := TestRow{}
-	parser, err := NewParser(file, &data)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	parser := NewParser(file, &data)
 
 	i := 0
 
@@ -107,7 +103,7 @@ func TestParserWithTag(t *testing.T) {
 	defer file.Close()
 
 	data := TestTaggedRow{}
-	parser, err := NewParser(file, &data)
+	parser, err := NewStructModeParser(file, &data)
 	if err != nil {
 		t.Error(err)
 		return
