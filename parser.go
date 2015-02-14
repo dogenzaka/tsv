@@ -3,6 +3,7 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
+	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
 	"strconv"
@@ -16,10 +17,11 @@ type Parser struct {
 	ref        reflect.Value
 	indices    []int // indices is field index list of header array
 	structMode bool
+	normalize  norm.Form
 }
 
 // NewStructModeParser creates new TSV parser with given io.Reader as struct mode
-func NewStructModeParser(reader io.Reader, data interface{}) (*Parser, error) {
+func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 
@@ -41,6 +43,7 @@ func NewStructModeParser(reader io.Reader, data interface{}) (*Parser, error) {
 		ref:        reflect.ValueOf(data).Elem(),
 		indices:    make([]int, len(headers)),
 		structMode: false,
+		normalize:  -1,
 	}
 
 	// get type information
@@ -49,35 +52,37 @@ func NewStructModeParser(reader io.Reader, data interface{}) (*Parser, error) {
 	for i := 0; i < t.NumField(); i++ {
 		// get TSV tag
 		tsvtag := t.Field(i).Tag.Get("tsv")
-		if tsvtag == "" {
-			return nil, errors.New("Invalid tsv tag")
-		}
-		// find tsv position by header
-		for j := 0; j < len(headers); j++ {
-			if headers[j] == tsvtag {
-				// indices are 1 start
-				p.indices[j] = i + 1
-				p.structMode = true
+		if tsvtag != "" {
+			// find tsv position by header
+			for j := 0; j < len(headers); j++ {
+				if headers[j] == tsvtag {
+					// indices are 1 start
+					p.indices[j] = i + 1
+					p.structMode = true
+				}
 			}
 		}
 	}
 
 	if !p.structMode {
-		return nil, errors.New("Invalid tsv tag or headers")
+		for i := 0; i < len(headers); i++ {
+			p.indices[i] = i + 1
+		}
 	}
 
 	return p, nil
 }
 
-// NewParser creates new TSV parser with given io.Reader
-func NewParser(reader io.Reader, data interface{}) *Parser {
+// NewParserWithoutHeader creates new TSV parser with given io.Reader
+func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 
 	p := &Parser{
-		Reader: r,
-		Data:   data,
-		ref:    reflect.ValueOf(data).Elem(),
+		Reader:    r,
+		Data:      data,
+		ref:       reflect.ValueOf(data).Elem(),
+		normalize: -1,
 	}
 
 	return p
@@ -122,6 +127,10 @@ func (p *Parser) Next() (eof bool, err error) {
 		field := p.ref.Field(idx - 1)
 		switch field.Kind() {
 		case reflect.String:
+			// Normalize text
+			if p.normalize >= 0 {
+				record = p.normalize.String(record)
+			}
 			field.SetString(record)
 		case reflect.Bool:
 			if record == "" {

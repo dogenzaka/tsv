@@ -1,6 +1,7 @@
 package tsv
 
 import (
+	"golang.org/x/text/unicode/norm"
 	"os"
 	"testing"
 )
@@ -19,7 +20,7 @@ type TestTaggedRow struct {
 	Name   string `tsv:"name"`
 }
 
-func TestParser(t *testing.T) {
+func TestParserWithoutHeader(t *testing.T) {
 
 	file, err := os.Open("example_simple.tsv")
 	if err != nil {
@@ -29,7 +30,7 @@ func TestParser(t *testing.T) {
 	defer file.Close()
 
 	data := TestRow{}
-	parser := NewParser(file, &data)
+	parser := NewParserWithoutHeader(file, &data)
 
 	i := 0
 
@@ -93,7 +94,7 @@ func TestParser(t *testing.T) {
 
 }
 
-func TestParserWithTag(t *testing.T) {
+func TestParserTaggedStructure(t *testing.T) {
 
 	file, err := os.Open("example.tsv")
 	if err != nil {
@@ -103,7 +104,7 @@ func TestParserWithTag(t *testing.T) {
 	defer file.Close()
 
 	data := TestTaggedRow{}
-	parser, err := NewStructModeParser(file, &data)
+	parser, err := NewParser(file, &data)
 	if err != nil {
 		t.Error(err)
 		return
@@ -148,6 +149,54 @@ func TestParserWithTag(t *testing.T) {
 				data.Active != true {
 				t.Error("Record does not match index:2")
 			}
+		}
+		i++
+	}
+
+}
+
+func TestParserNormalize(t *testing.T) {
+
+	file, err := os.Open("example_norm.tsv")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer file.Close()
+
+	data := TestRow{}
+	parser, err := NewParser(file, &data)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// Use NFC as normalization
+	parser.normalize = norm.NFKC
+
+	i := 0
+
+	for {
+		eof, err := parser.Next()
+		if eof {
+			return
+		}
+		if err != nil {
+			t.Error(err)
+		}
+		if i == 0 && data.Name != "アレックス" {
+			t.Errorf("name is not normalized %v", data.Name)
+		}
+		if i == 1 && data.Name != "デボラ" {
+			t.Errorf("name is not normalized %v", data.Name)
+		}
+		if i == 2 && data.Name != "デボラ" {
+			t.Errorf("name is not normalized %v", data.Name)
+		}
+		if i == 3 && data.Name != "(テスト)" {
+			t.Errorf("name is not normalized %v", data.Name)
+		}
+		if i == 4 && data.Name != "/" {
+			t.Errorf("name is not normalized %v", data.Name)
 		}
 		i++
 	}
