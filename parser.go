@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// Parser has information for parser
 type Parser struct {
 	Headers    []string
 	Reader     *csv.Reader
@@ -17,11 +18,8 @@ type Parser struct {
 	structMode bool
 }
 
-// NewParser creates new TSV parser with given io.Reader
-func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
-
-	ref := reflect.ValueOf(data).Elem()
-
+// NewStructModeParser creates new TSV parser with given io.Reader as struct mode
+func NewStructModeParser(reader io.Reader, data interface{}) (*Parser, error) {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 
@@ -40,41 +38,52 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 		Reader:     r,
 		Headers:    headers,
 		Data:       data,
-		ref:        ref,
+		ref:        reflect.ValueOf(data).Elem(),
 		indices:    make([]int, len(headers)),
 		structMode: false,
 	}
 
 	// get type information
-	t := ref.Type()
+	t := p.ref.Type()
 
 	for i := 0; i < t.NumField(); i++ {
 		// get TSV tag
 		tsvtag := t.Field(i).Tag.Get("tsv")
-		if tsvtag != "" {
-			// find tsv position by header
-			for j := 0; j < len(headers); j++ {
-				if headers[j] == tsvtag {
-					// indices are 1 start
-					p.indices[j] = i + 1
-				}
+		if tsvtag == "" {
+			return nil, errors.New("Invalid tsv tag")
+		}
+		// find tsv position by header
+		for j := 0; j < len(headers); j++ {
+			if headers[j] == tsvtag {
+				// indices are 1 start
+				p.indices[j] = i + 1
+				p.structMode = true
 			}
-			// make struct mode be true if found tsv tags
-			p.structMode = true
 		}
 	}
 
-	// mapping simple index if tsv not exist in field tags
 	if !p.structMode {
-		for i := 0; i < len(headers); i++ {
-			p.indices[i] = i + 1
-		}
+		return nil, errors.New("Invalid tsv tag or headers")
 	}
 
 	return p, nil
 }
 
-// Next
+// NewParser creates new TSV parser with given io.Reader
+func NewParser(reader io.Reader, data interface{}) *Parser {
+	r := csv.NewReader(reader)
+	r.Comma = '\t'
+
+	p := &Parser{
+		Reader: r,
+		Data:   data,
+		ref:    reflect.ValueOf(data).Elem(),
+	}
+
+	return p
+}
+
+// Next puts reader forward by a line
 func (p *Parser) Next() (eof bool, err error) {
 
 	// Get next record
@@ -91,6 +100,14 @@ func (p *Parser) Next() (eof bool, err error) {
 		}
 		if len(records) > 0 {
 			break
+		}
+	}
+
+	if len(p.indices) == 0 {
+		p.indices = make([]int, len(records))
+		// mapping simple index
+		for i := 0; i < len(records); i++ {
+			p.indices[i] = i + 1
 		}
 	}
 
