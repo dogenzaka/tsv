@@ -73,4 +73,5 @@ Currently this library supports limited fields
 - int
 - string
 - bool
+- float64
 
