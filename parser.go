@@ -3,10 +3,11 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
-	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
 	"strconv"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 // Parser has information for parser
@@ -151,6 +152,16 @@ func (p *Parser) Next() (eof bool, err error) {
 					return false, err
 				}
 				field.SetInt(col)
+			}
+		case reflect.Float64:
+			if record == "" {
+				field.SetFloat(0)
+			} else {
+				col, err := strconv.ParseFloat(record, -1)
+				if err != nil {
+					return false, err
+				}
+				field.SetFloat(col)
 			}
 		default:
 			return false, errors.New("Unsupported field type")
