@@ -1,7 +1,7 @@
-name	age	gender	active
-alex	10	male	true
-john	24	male	false
-sara	30	female	true
-taro	40	male	true	overflow	record
+name	age	gender	active	weight
+alex	10	male	true	56.8
+john	24	male	false	56.3
+sara	30	female	true	98.2
+taro	40	male	true		overflow	record
 hanako		female	no
 mike	55	male		

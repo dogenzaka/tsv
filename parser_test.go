@@ -1,9 +1,10 @@
 package tsv
 
 import (
-	"golang.org/x/text/unicode/norm"
 	"os"
 	"testing"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 type TestRow struct {
@@ -11,13 +12,15 @@ type TestRow struct {
 	Age    int
 	Gender string
 	Active bool
+	Weight float32
 }
 
 type TestTaggedRow struct {
-	Age    int    `tsv:"age"`
-	Active bool   `tsv:"active"`
-	Gender string `tsv:"gender"`
-	Name   string `tsv:"name"`
+	Age    int     `tsv:"age"`
+	Active bool    `tsv:"active"`
+	Gender string  `tsv:"gender"`
+	Name   string  `tsv:"name"`
+	Weight float32 `tsv:"weight"`
 }
 
 func TestParserWithoutHeader(t *testing.T) {
@@ -40,10 +43,12 @@ func TestParserWithoutHeader(t *testing.T) {
 			return
 		}
 		if i == 0 {
+			t.Log(data)
 			if data.Name != "alex" ||
 				data.Age != 10 ||
 				data.Gender != "male" ||
-				data.Active != true {
+				data.Active != true ||
+				data.Weight != 56.8 {
 				t.Error("Record does not match index:0")
 				if err != nil {
 					t.Error(err)
@@ -54,7 +59,8 @@ func TestParserWithoutHeader(t *testing.T) {
 			if data.Name != "john" ||
 				data.Age != 24 ||
 				data.Gender != "male" ||
-				data.Active != false {
+				data.Active != false ||
+				data.Weight != 56.3 {
 				t.Error("Record does not match index:1")
 				if err != nil {
 					t.Error(err)
@@ -65,7 +71,8 @@ func TestParserWithoutHeader(t *testing.T) {
 			if data.Name != "sara" ||
 				data.Age != 30 ||
 				data.Gender != "female" ||
-				data.Active != true {
+				data.Active != true ||
+				data.Weight != 98.2 {
 				t.Error("Record does not match index:2")
 				if err != nil {
 					t.Error(err)
@@ -73,20 +80,30 @@ func TestParserWithoutHeader(t *testing.T) {
 			}
 		}
 		if i == 3 {
+			t.Log(err)
 			if err == nil {
 				t.Error("Error should be caused")
 				return
 			}
 		}
 		if i == 4 {
+			t.Log(err)
+
 			if err == nil {
 				t.Error("Error should be caused")
 				return
 			}
 		}
 		if i == 5 {
-			if err == nil {
-				t.Error("Error should be caused")
+			if data.Name != "mike" ||
+				data.Age != 55 ||
+				data.Gender != "male" ||
+				data.Active != false ||
+				data.Weight != 0 {
+				t.Error("Record does not match index:5")
+				if err != nil {
+					t.Error(err)
+				}
 			}
 		}
 		i++
@@ -124,7 +141,8 @@ func TestParserTaggedStructure(t *testing.T) {
 			if data.Name != "alex" ||
 				data.Age != 10 ||
 				data.Gender != "male" ||
-				data.Active != true {
+				data.Active != true ||
+				data.Weight != 56.8 {
 				t.Error("Record does not match index:0")
 			}
 		}
@@ -135,7 +153,8 @@ func TestParserTaggedStructure(t *testing.T) {
 			if data.Name != "john" ||
 				data.Age != 24 ||
 				data.Gender != "male" ||
-				data.Active != false {
+				data.Active != false ||
+				data.Weight != 56.3 {
 				t.Error("Record does not match index:1")
 			}
 		}
@@ -146,7 +165,8 @@ func TestParserTaggedStructure(t *testing.T) {
 			if data.Name != "sara" ||
 				data.Age != 30 ||
 				data.Gender != "female" ||
-				data.Active != true {
+				data.Active != true ||
+				data.Weight != 98.2 {
 				t.Error("Record does not match index:2")
 			}
 		}
