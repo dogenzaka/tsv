@@ -36,20 +36,19 @@ func main() {
   file, _ := os.Open("example.tsv")
   defer file.Close()
 
-  data := TestRow{}
-  parser, _ := NewParser(file, &data)
+  parser, _ := NewParser(file, &TestRow{})
 
   for {
-    eof, err := parser.Next()
+    item := TestRow{}
+    eof, err := parser.Next(&item)
     if eof {
       return
     }
     if err != nil {
       panic(err)
     }
-    fmt.Println(data)
+    fmt.Println(item)
   }
-
 }
 
 ```

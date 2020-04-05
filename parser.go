@@ -13,7 +13,6 @@ import (
 type Parser struct {
 	Headers    []string
 	Reader     *csv.Reader
-	Data       interface{}
 	ref        reflect.Value
 	indices    []int // indices is field index list of header array
 	structMode bool
@@ -39,7 +38,6 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 	p := &Parser{
 		Reader:     r,
 		Headers:    headers,
-		Data:       data,
 		ref:        reflect.ValueOf(data).Elem(),
 		indices:    make([]int, len(headers)),
 		structMode: false,
@@ -80,7 +78,6 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
 
 	p := &Parser{
 		Reader:    r,
-		Data:      data,
 		ref:       reflect.ValueOf(data).Elem(),
 		normalize: -1,
 	}
@@ -89,7 +86,10 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
 }
 
 // Next puts reader forward by a line
-func (p *Parser) Next() (eof bool, err error) {
+func (p *Parser) Next(data interface{}) (eof bool, err error) {
+
+	// Get data reflect value
+	dataReflected := reflect.ValueOf(data).Elem()
 
 	// Get next record
 	var records []string
@@ -124,7 +124,7 @@ func (p *Parser) Next() (eof bool, err error) {
 			continue
 		}
 		// get target field
-		field := p.ref.Field(idx - 1)
+		field := dataReflected.Field(idx - 1)
 		switch field.Kind() {
 		case reflect.String:
 			// Normalize text

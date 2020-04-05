@@ -29,21 +29,21 @@ func TestParserWithoutHeader(t *testing.T) {
 	}
 	defer file.Close()
 
-	data := TestRow{}
-	parser := NewParserWithoutHeader(file, &data)
+	parser := NewParserWithoutHeader(file, &TestRow{})
 
 	i := 0
 
 	for {
-		eof, err := parser.Next()
+		item := TestRow{}
+		eof, err := parser.Next(&item)
 		if eof {
 			return
 		}
 		if i == 0 {
-			if data.Name != "alex" ||
-				data.Age != 10 ||
-				data.Gender != "male" ||
-				data.Active != true {
+			if item.Name != "alex" ||
+				item.Age != 10 ||
+				item.Gender != "male" ||
+				item.Active != true {
 				t.Error("Record does not match index:0")
 				if err != nil {
 					t.Error(err)
@@ -51,10 +51,10 @@ func TestParserWithoutHeader(t *testing.T) {
 			}
 		}
 		if i == 1 {
-			if data.Name != "john" ||
-				data.Age != 24 ||
-				data.Gender != "male" ||
-				data.Active != false {
+			if item.Name != "john" ||
+				item.Age != 24 ||
+				item.Gender != "male" ||
+				item.Active != false {
 				t.Error("Record does not match index:1")
 				if err != nil {
 					t.Error(err)
@@ -62,10 +62,10 @@ func TestParserWithoutHeader(t *testing.T) {
 			}
 		}
 		if i == 2 {
-			if data.Name != "sara" ||
-				data.Age != 30 ||
-				data.Gender != "female" ||
-				data.Active != true {
+			if item.Name != "sara" ||
+				item.Age != 30 ||
+				item.Gender != "female" ||
+				item.Active != true {
 				t.Error("Record does not match index:2")
 				if err != nil {
 					t.Error(err)
@@ -103,8 +103,7 @@ func TestParserTaggedStructure(t *testing.T) {
 	}
 	defer file.Close()
 
-	data := TestTaggedRow{}
-	parser, err := NewParser(file, &data)
+	parser, err := NewParser(file, &TestTaggedRow{})
 	if err != nil {
 		t.Error(err)
 		return
@@ -113,7 +112,8 @@ func TestParserTaggedStructure(t *testing.T) {
 	i := 0
 
 	for {
-		eof, err := parser.Next()
+		item := TestTaggedRow{}
+		eof, err := parser.Next(&item)
 		if eof {
 			return
 		}
@@ -121,10 +121,10 @@ func TestParserTaggedStructure(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if data.Name != "alex" ||
-				data.Age != 10 ||
-				data.Gender != "male" ||
-				data.Active != true {
+			if item.Name != "alex" ||
+				item.Age != 10 ||
+				item.Gender != "male" ||
+				item.Active != true {
 				t.Error("Record does not match index:0")
 			}
 		}
@@ -132,10 +132,10 @@ func TestParserTaggedStructure(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if data.Name != "john" ||
-				data.Age != 24 ||
-				data.Gender != "male" ||
-				data.Active != false {
+			if item.Name != "john" ||
+				item.Age != 24 ||
+				item.Gender != "male" ||
+				item.Active != false {
 				t.Error("Record does not match index:1")
 			}
 		}
@@ -143,10 +143,10 @@ func TestParserTaggedStructure(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if data.Name != "sara" ||
-				data.Age != 30 ||
-				data.Gender != "female" ||
-				data.Active != true {
+			if item.Name != "sara" ||
+				item.Age != 30 ||
+				item.Gender != "female" ||
+				item.Active != true {
 				t.Error("Record does not match index:2")
 			}
 		}
@@ -164,8 +164,7 @@ func TestParserNormalize(t *testing.T) {
 	}
 	defer file.Close()
 
-	data := TestRow{}
-	parser, err := NewParser(file, &data)
+	parser, err := NewParser(file, &TestRow{})
 	if err != nil {
 		t.Error(err)
 		return
@@ -176,27 +175,28 @@ func TestParserNormalize(t *testing.T) {
 	i := 0
 
 	for {
-		eof, err := parser.Next()
+		item := TestRow{}
+		eof, err := parser.Next(&item)
 		if eof {
 			return
 		}
 		if err != nil {
 			t.Error(err)
 		}
-		if i == 0 && data.Name != "アレックス" {
-			t.Errorf("name is not normalized %v", data.Name)
+		if i == 0 && item.Name != "アレックス" {
+			t.Errorf("name is not normalized %v", item.Name)
 		}
-		if i == 1 && data.Name != "デボラ" {
-			t.Errorf("name is not normalized %v", data.Name)
+		if i == 1 && item.Name != "デボラ" {
+			t.Errorf("name is not normalized %v", item.Name)
 		}
-		if i == 2 && data.Name != "デボラ" {
-			t.Errorf("name is not normalized %v", data.Name)
+		if i == 2 && item.Name != "デボラ" {
+			t.Errorf("name is not normalized %v", item.Name)
 		}
-		if i == 3 && data.Name != "(テスト)" {
-			t.Errorf("name is not normalized %v", data.Name)
+		if i == 3 && item.Name != "(テスト)" {
+			t.Errorf("name is not normalized %v", item.Name)
 		}
-		if i == 4 && data.Name != "/" {
-			t.Errorf("name is not normalized %v", data.Name)
+		if i == 4 && item.Name != "/" {
+			t.Errorf("name is not normalized %v", item.Name)
 		}
 		i++
 	}
