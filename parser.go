@@ -2,11 +2,14 @@ package tsv
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // Parser has information for parser
@@ -23,6 +26,7 @@ type Parser struct {
 func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
+	r.LazyQuotes = true
 
 	// first line should be fields
 	headers, err := r.Read()
@@ -152,10 +156,103 @@ func (p *Parser) Next(data interface{}) (eof bool, err error) {
 				}
 				field.SetInt(col)
 			}
+		case reflect.Slice:
+			fieldType := field.Type()
+			elemType := fieldType.Elem()
+			switch elemType.Kind() {
+			case reflect.String:
+				values, err := parseStringArray(record)
+				if err != nil {
+					return false, fmt.Errorf("could not parse %s as JSON array: %w", record, err)
+				}
+				appendAllString(&field, elemType, values)
+			case reflect.Int:
+				values, err := parseIntArray(record)
+				if err != nil {
+					return false, fmt.Errorf("could not parse %s as JSON array: %w", record, err)
+				}
+				appendAllInt(&field, elemType, values)
+			case reflect.Bool:
+				values, err := parseBoolArray(record)
+				if err != nil {
+					return false, fmt.Errorf("could not parse %s as JSON array: %w", record, err)
+				}
+				appendAllBool(&field, elemType, values)
+			case reflect.Float64:
+				values, err := parseFloatArray(record)
+				if err != nil {
+					return false, fmt.Errorf("could not parse %s as JSON array: %w", record, err)
+				}
+				appendAllFloat(&field, elemType, values)
+			}
 		default:
 			return false, errors.New("Unsupported field type")
 		}
 	}
 
 	return false, nil
+}
+
+func parseIntArray(data string) ([]int64, error) {
+	var result []int64
+	if err := json.NewDecoder(strings.NewReader(data)).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func parseStringArray(data string) ([]string, error) {
+	var result []string
+	if err := json.NewDecoder(strings.NewReader(data)).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func parseBoolArray(data string) ([]bool, error) {
+	var result []bool
+	if err := json.NewDecoder(strings.NewReader(data)).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func parseFloatArray(data string) ([]float64, error) {
+	var result []float64
+	if err := json.NewDecoder(strings.NewReader(data)).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func appendAllInt(target *reflect.Value, elemType reflect.Type, values []int64) {
+	elem := reflect.New(elemType).Elem()
+	for _, i := range values {
+		elem.SetInt(i)
+		target.Set(reflect.Append(*target, elem))
+	}
+}
+
+func appendAllString(target *reflect.Value, elemType reflect.Type, values []string) {
+	elem := reflect.New(elemType).Elem()
+	for _, i := range values {
+		elem.SetString(i)
+		target.Set(reflect.Append(*target, elem))
+	}
+}
+
+func appendAllBool(target *reflect.Value, elemType reflect.Type, values []bool) {
+	elem := reflect.New(elemType).Elem()
+	for _, i := range values {
+		elem.SetBool(i)
+		target.Set(reflect.Append(*target, elem))
+	}
+}
+
+func appendAllFloat(target *reflect.Value, elemType reflect.Type, values []float64) {
+	elem := reflect.New(elemType).Elem()
+	for _, i := range values {
+		elem.SetFloat(i)
+		target.Set(reflect.Append(*target, elem))
+	}
 }

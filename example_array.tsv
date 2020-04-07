@@ -1,0 +1,6 @@
+name	age	gender	favorite_numbers	favorite_heroes
+alex	10	male	[10]	["flash"]
+john	24	male	[22]	["spiderman", "wonder_woman"]
+sara	30	female	[12, 24]	["green_lantern", "rorschach"]
+taro	40	male	[]	["batman"]
+hanako		female	[5]	[]
