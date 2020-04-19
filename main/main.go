@@ -3,16 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tsv "github.com/stefantds/tsv"
 )
 
 type TestExampleRow struct {
-	Name            string   // 0
-	Age             int      // 1
-	Gender          string   // 2
-	FavoriteNumbers []int    // 3
-	FavoriteHeroes  []string // 4
+	Name            string
+	Age             int
+	Gender          string
+	FavoriteNumbers []int
+	FavoriteHeroes  []string
 }
 
 type ExampleStringArrayRow struct {
@@ -31,21 +32,50 @@ type ExampleIntArrayArrayRow struct {
 	Heroes [][]int
 }
 
+type MyDeserializer1 struct {
+	value string
+}
+
+func (d *MyDeserializer1) DecodeRecord(value string) error {
+	d.value = strings.Join(strings.Split(value, "e"), ".")
+	return nil
+}
+
+type MyDeserializer2 struct {
+	value string
+}
+
+func (d *MyDeserializer2) DecodeRecord(value string) error {
+	d.value = strings.Join(strings.Split(value, "e"), ".")
+	return nil
+}
+
+type TestExampleDeserializerRow struct {
+	Name            *MyDeserializer1
+	Age             *MyDeserializer2
+	Gender          tsv.Decoder
+	FavoriteNumbers []int
+	FavoriteHeroes  []string
+}
+
 func main() {
 	fmt.Println("running")
-	file, err := os.Open("/Users/stefan.tudose/private/gitrepos/tsv/example_int_array_array.tsv")
+	file, err := os.Open("/Users/stefan.tudose/private/gitrepos/tsv/example_array.tsv")
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	parser, err := tsv.NewParser(file, &ExampleIntArrayArrayRow{})
+	parser, err := tsv.NewParser(file)
 	if err != nil {
 		panic(err)
 	}
 
 	for {
-		data := ExampleIntArrayArrayRow{}
+		data := TestExampleDeserializerRow{
+			Age:    &MyDeserializer2{},
+			Gender: &MyDeserializer1{},
+		}
 		eof, err := parser.Next(&data)
 		if eof {
 			return

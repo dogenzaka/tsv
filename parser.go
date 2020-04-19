@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
 	"strconv"
@@ -14,127 +13,82 @@ import (
 
 // Parser has information for parser
 type Parser struct {
-	Headers    []string
 	Reader     *csv.Reader
-	ref        reflect.Value
-	indices    []int // indices is field index list of header array
 	structMode bool
-	normalize  norm.Form
 }
 
 // NewStructModeParser creates new TSV parser with given io.Reader as struct mode
-func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
+func NewParser(reader io.Reader) (*Parser, error) {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 	r.LazyQuotes = true
 
-	// first line should be fields
-	headers, err := r.Read()
-
-	if err != nil {
-		return nil, err
-	}
-
-	for i, header := range headers {
-		headers[i] = header
-	}
-
 	p := &Parser{
 		Reader:     r,
-		Headers:    headers,
-		ref:        reflect.ValueOf(data).Elem(),
-		indices:    make([]int, len(headers)),
 		structMode: false,
-		normalize:  -1,
-	}
-
-	// get type information
-	t := p.ref.Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		// get TSV tag
-		tsvtag := t.Field(i).Tag.Get("tsv")
-		if tsvtag != "" {
-			// find tsv position by header
-			for j := 0; j < len(headers); j++ {
-				if headers[j] == tsvtag {
-					// indices are 1 start
-					p.indices[j] = i + 1
-					p.structMode = true
-				}
-			}
-		}
-	}
-
-	if !p.structMode {
-		for i := 0; i < len(headers); i++ {
-			p.indices[i] = i + 1
-		}
 	}
 
 	return p, nil
 }
 
-// NewParserWithoutHeader creates new TSV parser with given io.Reader
-func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
-	r := csv.NewReader(reader)
-	r.Comma = '\t'
-
-	p := &Parser{
-		Reader:    r,
-		ref:       reflect.ValueOf(data).Elem(),
-		normalize: -1,
-	}
-
-	return p
-}
-
 // Next puts reader forward by a line
 func (p *Parser) Next(data interface{}) (eof bool, err error) {
 
-	// Get data reflect value
-	dataReflected := reflect.ValueOf(data).Elem()
+	decoderType := reflect.TypeOf((*Decoder)(nil)).Elem()
 
-	// Get next record
-	var records []string
+	dataReflected := reflect.ValueOf(data)
 
+	// Get data value, while resolving pointers and interfaces
 	for {
-		// read until valid record
-		records, err = p.Reader.Read()
-		if err != nil {
-			if err.Error() == "EOF" {
-				return true, nil
-			}
-			return false, err
-		}
-		if len(records) > 0 {
+		if dataReflected.Kind() == reflect.Interface || dataReflected.Kind() == reflect.Ptr {
+			dataReflected = dataReflected.Elem()
+		} else {
 			break
 		}
 	}
 
-	if len(p.indices) == 0 {
-		p.indices = make([]int, len(records))
-		// mapping simple index
-		for i := 0; i < len(records); i++ {
-			p.indices[i] = i + 1
+	records, err := p.Reader.Read()
+	if err != nil {
+		if err.Error() == "EOF" {
+			return true, nil
 		}
+		return false, err
 	}
 
-	// record should be a pointer
 	for i, record := range records {
-		idx := p.indices[i]
-		if idx == 0 {
-			// skip empty index
-			continue
-		}
-		// get target field
-		field := dataReflected.Field(idx - 1)
+		field := dataReflected.Field(i)
+
 		switch field.Kind() {
-		case reflect.String:
-			// Normalize text
-			if p.normalize >= 0 {
-				record = p.normalize.String(record)
+		case reflect.Ptr:
+			fieldType := field.Type()
+			if field.Type().Implements(decoderType) {
+				if field.IsZero() {
+					// create a new value
+					newValue := reflect.New(fieldType.Elem())
+					field.Set(newValue)
+				}
+
+				fieldDecoder, _ := field.Addr().Elem().Interface().(Decoder)
+				fieldDecoder.DecodeRecord(record)
+			} else {
+				return false, errors.New("Unsupported pointer to struct that doesn't implement the Decoder interface")
 			}
+
+		case reflect.Interface:
+			fieldType := field.Type()
+			if field.Type().Implements(decoderType) {
+				if field.IsZero() {
+					// create a new value
+					newValue := reflect.New(fieldType.Elem())
+					field.Set(newValue)
+				}
+
+				fieldDecoder, _ := field.Addr().Elem().Interface().(Decoder)
+				fieldDecoder.DecodeRecord(record)
+			} else {
+				return false, errors.New("Unsupported pointer to struct that doesn't implement deserializer")
+			}
+		case reflect.String:
 			field.SetString(record)
 		case reflect.Bool:
 			if record == "" {
