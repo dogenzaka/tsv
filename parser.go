@@ -92,8 +92,14 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
 	return p
 }
 
-func (p *Parser) SetEmptyValue(str string) {
-	p.emptyVals[str] = struct{}{}
+func (p *Parser) SetEmptyValue(value string) {
+	p.emptyVals[value] = struct{}{}
+}
+
+func (p *Parser) SetEmptyValues(values ...string) {
+	for _, value := range values {
+		p.SetEmptyValue(value)
+	}
 }
 
 // Next puts reader forward by a line
