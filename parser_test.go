@@ -1,9 +1,10 @@
 package tsv
 
 import (
-	"golang.org/x/text/unicode/norm"
 	"os"
 	"testing"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 type TestRow struct {
@@ -111,6 +112,7 @@ func TestParserTaggedStructure(t *testing.T) {
 	}
 
 	i := 0
+	parser.SetEmptyValue("-")
 
 	for {
 		eof, err := parser.Next()
@@ -148,6 +150,17 @@ func TestParserTaggedStructure(t *testing.T) {
 				data.Gender != "female" ||
 				data.Active != true {
 				t.Error("Record does not match index:2")
+			}
+		}
+		if i == 7 {
+			if err != nil {
+				t.Error(err)
+			}
+			if data.Name != "hanako" ||
+				data.Age != 0 ||
+				data.Gender != "female" ||
+				data.Active != false {
+				t.Error("Record does not match index:7")
 			}
 		}
 		i++

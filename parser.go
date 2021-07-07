@@ -3,10 +3,11 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
-	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
 	"strconv"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 // Parser has information for parser
@@ -18,6 +19,7 @@ type Parser struct {
 	indices    []int // indices is field index list of header array
 	structMode bool
 	normalize  norm.Form
+	emptyVals  map[string]struct{}
 }
 
 // NewStructModeParser creates new TSV parser with given io.Reader as struct mode
@@ -44,6 +46,7 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 		indices:    make([]int, len(headers)),
 		structMode: false,
 		normalize:  -1,
+		emptyVals:  map[string]struct{}{},
 	}
 
 	// get type information
@@ -83,9 +86,14 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
 		Data:      data,
 		ref:       reflect.ValueOf(data).Elem(),
 		normalize: -1,
+		emptyVals: map[string]struct{}{},
 	}
 
 	return p
+}
+
+func (p *Parser) SetEmptyValue(str string) {
+	p.emptyVals[str] = struct{}{}
 }
 
 // Next puts reader forward by a line
@@ -133,7 +141,7 @@ func (p *Parser) Next() (eof bool, err error) {
 			}
 			field.SetString(record)
 		case reflect.Bool:
-			if record == "" {
+			if _, isEmpty := p.emptyVals[record]; isEmpty || record == "" {
 				field.SetBool(false)
 			} else {
 				col, err := strconv.ParseBool(record)
@@ -143,7 +151,7 @@ func (p *Parser) Next() (eof bool, err error) {
 				field.SetBool(col)
 			}
 		case reflect.Int:
-			if record == "" {
+			if _, isEmpty := p.emptyVals[record]; isEmpty || record == "" {
 				field.SetInt(0)
 			} else {
 				col, err := strconv.ParseInt(record, 10, 0)
