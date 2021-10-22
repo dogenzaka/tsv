@@ -34,9 +34,9 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 		return nil, err
 	}
 
-	for i, header := range headers {
-		headers[i] = header
-	}
+	// for i, header := range headers {
+	// 	headers[i] = header
+	// }
 
 	p := &Parser{
 		Reader:     r,
@@ -165,6 +165,16 @@ func (p *Parser) Next() (eof bool, err error) {
 					return false, err
 				}
 				field.SetInt(col)
+			}
+		case reflect.Float64:
+			if _, isEmpty := p.emptyVals[record]; isEmpty || record == "" {
+				field.SetFloat(0)
+			} else {
+				col, err := strconv.ParseFloat(record, 64)
+				if err != nil {
+					return false, err
+				}
+				field.SetFloat(col)
 			}
 		default:
 			return false, errors.New("Unsupported field type")

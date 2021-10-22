@@ -12,6 +12,7 @@ type TestRow struct {
 	Age    int
 	Gender string
 	Active bool
+	Val    float64
 }
 
 type TestTaggedRow struct {
@@ -44,7 +45,8 @@ func TestParserWithoutHeader(t *testing.T) {
 			if data.Name != "alex" ||
 				data.Age != 10 ||
 				data.Gender != "male" ||
-				data.Active != true {
+				data.Active != true ||
+				data.Val != 1.09 {
 				t.Error("Record does not match index:0")
 				if err != nil {
 					t.Error(err)

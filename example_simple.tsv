@@ -1,6 +1,6 @@
-alex	10	male	true
-john	24	male	false
-sara	30	female	true
-taro	40	male	true	overflow	record
-hanako		female	no
-mike	55	male		
+alex	10	male	true	1.09
+john	24	male	false	1.09
+sara	30	female	true	1.09
+taro	40	male	true	1.09	overflow	record
+hanako		female	no	1.09
+mike	55	male	1.09	
