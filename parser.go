@@ -2,11 +2,11 @@ package tsv
 
 import (
 	"encoding/csv"
-	"errors"
 	"io"
 	"reflect"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -34,9 +34,9 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 		return nil, err
 	}
 
-	// for i, header := range headers {
-	// 	headers[i] = header
-	// }
+	for i, header := range headers {
+		headers[i] = header
+	}
 
 	p := &Parser{
 		Reader:     r,
@@ -139,7 +139,8 @@ func (p *Parser) Next() (eof bool, err error) {
 		}
 		// get target field
 		field := p.ref.Field(idx - 1)
-		switch field.Kind() {
+		fieldType := field.Kind()
+		switch fieldType {
 		case reflect.String:
 			// Normalize text
 			if p.normalize >= 0 {
@@ -156,6 +157,8 @@ func (p *Parser) Next() (eof bool, err error) {
 				}
 				field.SetBool(col)
 			}
+		case reflect.Int64:
+			fallthrough
 		case reflect.Int:
 			if _, isEmpty := p.emptyVals[record]; isEmpty || record == "" {
 				field.SetInt(0)
@@ -177,7 +180,7 @@ func (p *Parser) Next() (eof bool, err error) {
 				field.SetFloat(col)
 			}
 		default:
-			return false, errors.New("Unsupported field type")
+			return false, errors.Errorf("Unsupported field type %s", fieldType)
 		}
 	}
 

@@ -98,7 +98,6 @@ func TestParserWithoutHeader(t *testing.T) {
 }
 
 func TestParserTaggedStructure(t *testing.T) {
-
 	file, err := os.Open("example.tsv")
 	if err != nil {
 		t.Error(err)
