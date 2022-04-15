@@ -1,11 +1,11 @@
 package tsv
 
 import (
-	"encoding/csv"
 	"io"
 	"reflect"
 	"strconv"
 
+	"github.com/Complead/tsv/csv"
 	"github.com/pkg/errors"
 	"golang.org/x/text/unicode/norm"
 )
